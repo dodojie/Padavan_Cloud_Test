@@ -1,0 +1,206 @@
+name: k2-ssp
+
+on: 
+  release:
+    types: [published]
+  push:
+    tags:
+    - 'v*'
+  watch:
+    types: [started]
+env:
+  REPOSITORY_URL: https://github.com/chongshengB/rt-n56u.git
+  TOOLCHAIN_URL: https://github.com/hanwckf/padavan-toolchain/releases/download/v1.1/mipsel-linux-uclibc.tar.xz
+  WORK_PATH: /home/rt-n56u					# 工作目录
+  FIRMWARE_PATH: /home/firmwares			# 固件规范名称后存放目录
+  FIRMWARE_NAME: "PSG1218"			# 要编译的设备，多个设备用空格分隔
+  FIRMWARE_VERSION: 20201015				# 自定义固件版本
+  FIRMWARE_AUTHOR: chongshengB				# 源码作者
+  APPLY_RAINBOWTHEME: OFF					# 彩虹主题
+  APPLY_PUBLIC_CUSTOM: ON					# 通用修改
+  APPLY_PRIVATE_CUSTOM: OFF					# 私有修改
+  APPLY_BUSYBOX_1_31_1: OFF					# busybox
+  CREATE_RELEASE: OFF						# 创建release
+  UPLOAD_RELEASE: ON						# 发布release
+  UPLOAD_COWTRANSFER: ON					# 上传至奶牛盘
+  UPLOAD_WETRANSFER: OFF					# 上传至WETRANSFER
+  TIME_ZONE: Asia/Shanghai					# 时区
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    if: github.event.repository.owner.id == github.event.sender.id
+
+    steps:
+
+    - name: 检出 / Checkout
+      uses: actions/checkout@main
+
+    - name: 初始化环境 / Initialization environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install unzip libtool-bin curl cmake gperf gawk flex bison nano xxd fakeroot \
+        sudo cpio git python-docutils gettext automake autopoint texinfo build-essential help2man \
+        pkg-config zlib1g-dev libgmp3-dev libmpc-dev libmpfr-dev libncurses5-dev libltdl-dev wget
+        sudo timedatectl set-timezone "$TIME_ZONE"
+
+    - name: 克隆源码 / Clone source code
+      run: |
+        sudo mkdir -p $WORK_PATH
+        sudo mkdir -p $FIRMWARE_PATH/
+        git clone --depth=1 $REPOSITORY_URL $WORK_PATH
+        cd $WORK_PATH/toolchain-mipsel
+        mkdir -p toolchain-3.4.x
+        wget $TOOLCHAIN_URL
+        tar -xvf mipsel-linux-uclibc.tar.xz -C toolchain-3.4.x
+
+    - name: 通用_修改 / Apply _Public_Custom
+      if: env.APPLY_PUBLIC_CUSTOM == 'ON'
+      run: |
+        sudo \cp -Rf work "$WORK_PATH"/work
+        sudo \cp -Rf "$WORK_PATH"/work/Public_Custom/trunk "$WORK_PATH"
+
+    - name: 私有_修改 / Apply _Private_Custom
+      if: env.APPLY_PRIVATE_CUSTOM == 'ON'
+      run: |
+        rm -rf "$WORK_PATH/trunk/configs/boards/JCG-AC856M/"
+        sudo \cp -Rf "$WORK_PATH"/work/Private_Custom/trunk "$WORK_PATH"
+
+    - name: 升级工具 / Apply Busybox 1.31.1
+      if: env.APPLY_BUSYBOX_1_31_1 == 'ON'
+      run: |        
+        sudo \cp -Rf "$WORK_PATH"/work/busybox/trunk "$WORK_PATH"
+        tar -xvf $WORK_PATH/trunk/user/busybox/busybox-1_31_1.tar.gz -C $WORK_PATH/trunk/user/busybox
+        sudo chmod -R 777 $WORK_PATH/trunk/user/busybox
+
+    - name: 彩虹主题 / Apply Rainbow Themes
+      if: env.APPLY_RAINBOWTHEME == 'ON'
+      run: |
+        sudo cp -f "$WORK_PATH"/work/rainbow/rainbowthemes.tar.xz $WORK_PATH/trunk/user/www
+        cd $WORK_PATH/trunk/user/www
+        sudo chmod +x ./rainbowthemes.tar.xz
+        mkdir -p n56u_rainbow
+        tar -xvf rainbowthemes.tar.xz -C n56u_rainbow
+        sed -i "s/WEBUI_NAME=n56u_ribbon_fixed/WEBUI_NAME=n56u_rainbow/g" ./Makefile
+
+    - name: 修改配置 & 编译固件 / Custom Config & Build Firmware
+      id: build_firmware
+      run: |
+        for TARGET_NAME in $FIRMWARE_NAME
+        do
+        cd $WORK_PATH/trunk
+        if [ ! -f configs/templates/$TARGET_NAME.config ] ; then
+        echo "configs/templates/${TARGET_NAME}.config not found"
+        exit 1
+        fi
+        sudo cp -f configs/templates/$TARGET_NAME.config .config
+        sed -i "s@CONFIG_TOOLCHAIN_DIR=/opt/rt-n56u/toolchain-mipsel@CONFIG_TOOLCHAIN_DIR=$WORK_PATH/toolchain-mipsel@g" .config
+        sed -i 's/CONFIG_FIRMWARE_INCLUDE_OPENSSL_EXE=n/CONFIG_FIRMWARE_INCLUDE_OPENSSL_EXE=y/g' .config
+        ################################################################################################
+        #因不同型号配置功能不一样，所以先把配置项删除，如果你自己要添加其他的，也要写上删除这一条，切记！！！
+        ################################################################################################
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_MENTOHUST/d' .config #删除配置项MENTOHUST
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_SCUTCLIENT/d' .config #删除配置项SCUTCLIENT
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS/d' .config #删除配置项SS plus+
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_SSSERVER/d' .config #删除配置项SS server
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_DNSFORWARDER/d' .config #删除配置项DNSFORWARDER
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_ADBYBY/d' .config #删除配置项adbyby plus+
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_FRPC/d' .config #删除配置项adbyby plus+
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_FRPS/d' .config #删除配置项adbyby plus+
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_TUNSAFE/d' .config #删除配置项adbyby plus+
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_ALIDDNS/d' .config #删除配置项阿里DDNS
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_SMARTDNS/d' .config
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_SRELAY/d' .config
+        sed -i 's/CONFIG_FIRMWARE_INCLUDE_OPENSSL_EXE=n/CONFIG_FIRMWARE_INCLUDE_OPENSSL_EXE=y/g' .config
+        ######################################################################
+        #以下选项是定义你需要的功能（y=集成,n=忽略），重新写入到.config文件
+        ######################################################################
+        echo "CONFIG_FIRMWARE_INCLUDE_MENTOHUST=n" >> .config #MENTOHUST
+        echo "CONFIG_FIRMWARE_INCLUDE_SCUTCLIENT=n" >> .config #SCUTCLIENT
+        echo "CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS=y" >> .config #SS plus+
+        echo "CONFIG_FIRMWARE_INCLUDE_SSOBFS=n" >> .config # simple-obfs混淆插件
+        echo "CONFIG_FIRMWARE_INCLUDE_SSSERVER=n" >> .config #SS server
+        echo "CONFIG_FIRMWARE_INCLUDE_DNSFORWARDER=n" >> .config #DNSFORWARDER
+        echo "CONFIG_FIRMWARE_INCLUDE_ADBYBY=n" >> .config #adbyby plus+
+        echo "CONFIG_FIRMWARE_INCLUDE_FRPC=n" >> .config #内网穿透FRPC
+        echo "CONFIG_FIRMWARE_INCLUDE_FRPS=n" >> .config #内网穿透FRPS
+        echo "CONFIG_FIRMWARE_INCLUDE_TUNSAFE=n" >> .config #TUNSAFE
+        echo "CONFIG_FIRMWARE_INCLUDE_ALIDDNS=n" >> .config #阿里DDNS
+        echo "CONFIG_FIRMWARE_INCLUDE_SMARTDNS=n" >> .config #smartdns
+        echo "CONFIG_FIRMWARE_INCLUDE_SMARTDNSBIN=n" >> .config #smartdns二进制文件
+        echo "CONFIG_FIRMWARE_INCLUDE_V2RAY=n" >> .config #集成v2ray执行文件（3.8M左右)，如果不集成，会从网上下载下来执行，不影响正常使用
+        echo "CONFIG_FIRMWARE_INCLUDE_TROJAN=n" >> .config #集成trojan执行文件(1.1M左右)，如果不集成，会从网上下载下来执行，不影响正常使用
+        echo "CONFIG_FIRMWARE_INCLUDE_KOOLPROXY=n" >> .config #KP广告过滤
+        echo "CONFIG_FIRMWARE_INCLUDE_CADDY=n" >> .config #在线文件管理服务
+        echo "CONFIG_FIRMWARE_INCLUDE_CADDYBIN=n" >> .config #集成caddu执行文件，此文件有13M,请注意固件大小。如果不集成，会从网上下载下来执行，不影响正常使用
+        echo "CONFIG_FIRMWARE_INCLUDE_ADGUARDHOME=n" >> .config
+        echo "CONFIG_FIRMWARE_INCLUDE_SRELAY=n" >> .config #可以不集成
+        echo "CONFIG_FIRMWARE_INCLUDE_WYY=n" >> .config #网易云解锁
+        echo "CONFIG_FIRMWARE_INCLUDE_WYYBIN=n" >> .config #网易云解锁GO版本执行文件（4M多）注意固件超大小,不集成会自动下载
+        echo "CONFIG_FIRMWARE_INCLUDE_ZEROTIER=n" >> .config #zerotier ~1.3M
+        #########################################################################################
+        #自定义添加其它功能请参考源码configs/templates/目录下的config文件。按照上面的格式添加即可
+        #格式如下：
+        #sed -i '/自定义项/d' .config
+        #echo "自定义项=y" >> .config
+        sed -i "s/FIRMWARE_BUILDS_REV=.*/FIRMWARE_BUILDS_REV=${FIRMWARE_VERSION}/g" ./versions.inc
+        echo '更新版本号时间'
+        #########################################################################################
+        cd $WORK_PATH/trunk
+        sudo ./clear_tree_simple
+        sudo ./build_firmware_modify $TARGET_NAME 0
+        ################################################################################################
+        rainbow_Prefix=""
+        if [ "${APPLY_RAINBOWTHEME}" = "ON" ]
+        then
+        rainbow_Prefix="_rainbow"
+        fi
+        cd $WORK_PATH/trunk/images
+        for firmwarefile in $(ls *.trx)
+        do sudo mv $firmwarefile ${FIRMWARE_PATH}/$(date +"%Y%m%d")"_"${TARGET_NAME}"_ssp.trx"
+        done
+        done
+        cd $FIRMWARE_PATH
+        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+        echo "::set-output name=status::success"
+
+    - name: 上传到奶牛盘 / Upload firmware to cowtransfer
+      if: steps.build_firmware.outputs.status == 'success' && env.UPLOAD_COWTRANSFER == 'ON'
+      run: |
+        curl -sL https://git.io/cowtransfer | sh
+        ./cowtransfer-uploader -s -p 16 --hash ${FIRMWARE} 2>&1 | tee cowtransfer.log
+        echo "::warning file=cowtransfer.com::$(cat cowtransfer.log | grep https)"
+        echo "COWTRANSFER_URL=$(cat cowtransfer.log | grep -o -E "https?://[a-zA-Z0-9\.\/_&=@$%?~#-]*")" >> $GITHUB_ENV
+   
+    - name: 上传到国外网盘 / Upload firmware to WeTransfer
+      if: steps.build_firmware.outputs.status == 'success' && env.UPLOAD_WETRANSFER == 'ON'
+      run: |
+        curl -fsSL git.io/file-transfer | sh
+        ./transfer wet -s -p 16 --no-progress ${FIRMWARE} 2>&1 | tee wetransfer.log
+        echo "::warning file=wetransfer.com::$(cat wetransfer.log | grep https)"
+        echo "WETRANSFER_URL=$(cat wetransfer.log | grep -o -E "https?://[a-zA-Z0-9\.\/_&=@$%?~#-]*")" >> $GITHUB_ENV
+   
+    - name : 创建 release / Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}	# This token is provided by Actions, you do not need to create your own token
+      if: steps.build_firmware.outputs.status == 'success' && env.CREATE_RELEASE == 'ON'	# 编译固件success & 设为ON 才执行
+      with:
+        tag_name: AtuoBuild-Padavan-chongshengB
+        release_name: Padavan © chongshengB
+        body: |
+          Padavan固件
+          自动中继+SmartDNS+Adbyby
+        draft: false
+        prerelease: false
+
+    - name : 向 Release 添加文件 / Upload Release
+      uses: svenstaro/upload-release-action@v2
+      if: steps.build_firmware.outputs.status == 'success' && env.UPLOAD_RELEASE == 'ON'	# 编译固件success & 设为ON 才执行
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: ${{ env.FIRMWARE_PATH }}/*.trx
+        tag: AtuoBuild-Padavan-chongshengB
+        overwrite: true
+        file_glob: true

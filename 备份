@@ -1,0 +1,13 @@
+    - name : 创建 release / Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}	# This token is provided by Actions, you do not need to create your own token
+      if: steps.build_firmware.outputs.status == 'success' && env.CREATE_RELEASE == 'ON'	# 编译固件success & 设为ON 才执行
+      with:
+        tag_name: AtuoBuild
+        release_name: Padavan By ${{ env.FIRMWARE_AUTHOR }}
+        body: |
+          Padavan固件
+          自动中继+SmartDNS+Adbyby
+        draft: false
+        prerelease: false

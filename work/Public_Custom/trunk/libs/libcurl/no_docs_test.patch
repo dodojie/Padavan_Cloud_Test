@@ -1,0 +1,42 @@
+diff -Naur 0/Makefile.am 1/Makefile.am
+--- 0/Makefile.am	2021-04-18 10:55:03.267999953 +0800
++++ 1/Makefile.am	2021-04-18 11:00:03.877999839 +0800
+@@ -195,7 +195,7 @@
+ bin_SCRIPTS = curl-config
+ 
+ SUBDIRS = lib src
+-DIST_SUBDIRS = $(SUBDIRS) tests packages scripts include docs
++DIST_SUBDIRS = $(SUBDIRS) packages include
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = libcurl.pc
+@@ -306,8 +306,6 @@
+ # We extend the standard install with a custom hook:
+ install-data-hook:
+ 	(cd include && $(MAKE) install)
+-	(cd docs && $(MAKE) install)
+-	(cd docs/libcurl && $(MAKE) install)
+ 
+ # We extend the standard uninstall with a custom hook:
+ uninstall-hook:
+diff -Naur 0/Makefile.in 1/Makefile.in
+--- 0/Makefile.in	2021-04-18 10:56:10.087999928 +0800
++++ 1/Makefile.in	2021-04-18 11:01:53.407999797 +0800
+@@ -701,7 +701,7 @@
+ 
+ bin_SCRIPTS = curl-config
+ SUBDIRS = lib src
+-DIST_SUBDIRS = $(SUBDIRS) tests packages scripts include docs
++DIST_SUBDIRS = $(SUBDIRS) packages include
+ pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = libcurl.pc
+ LIB_VAUTH_CFILES = \
+@@ -1782,8 +1782,6 @@
+ # We extend the standard install with a custom hook:
+ install-data-hook:
+ 	(cd include && $(MAKE) install)
+-	(cd docs && $(MAKE) install)
+-	(cd docs/libcurl && $(MAKE) install)
+ 
+ # We extend the standard uninstall with a custom hook:
+ uninstall-hook:
