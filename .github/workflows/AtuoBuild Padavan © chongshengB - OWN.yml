@@ -2,6 +2,11 @@ name: AtuoBuild Padavan © chongshengB - OWN
 
 on: 
   workflow_dispatch:
+      inputs:
+          CREATE_RELEASE:
+              description: '创建 release'
+              required: ON
+              default: 'OFF'
 env:
   REPOSITORY_URL: https://github.com/chongshengB/rt-n56u.git
   TOOLCHAIN_URL: https://github.com/hanwckf/padavan-toolchain/releases/download/v1.1/mipsel-linux-uclibc.tar.xz
@@ -14,7 +19,6 @@ env:
   APPLY_PUBLIC_CUSTOM: ON					# 通用修改
   APPLY_PRIVATE_CUSTOM: ON					# 私有修改
   APPLY_BUSYBOX_1_31_1: OFF					# busybox
-  CREATE_RELEASE: OFF						# 创建release
   UPLOAD_RELEASE: ON						# 发布release
   UPLOAD_COWTRANSFER: ON					# 上传至奶牛盘
   UPLOAD_WETRANSFER: OFF					# 上传至WETRANSFER
@@ -177,7 +181,7 @@ jobs:
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}	# This token is provided by Actions, you do not need to create your own token
-      if: steps.build_firmware.outputs.status == 'success' && env.CREATE_RELEASE == 'ON'	# 编译固件success & 设为ON 才执行
+      if: steps.build_firmware.outputs.status == 'success' && github.event.inputs.CREATE_RELEASE == 'ON'	# 编译固件success & 设为ON 才执行
       with:
         tag_name: AtuoBuild-Padavan-chongshengB
         release_name: Padavan © chongshengB
