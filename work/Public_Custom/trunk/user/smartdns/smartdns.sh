@@ -103,9 +103,6 @@ rm -f $SMARTDNS_CONF
 touch $SMARTDNS_CONF
 touch $SMARTDNS_CONF_TMP
 ARGS_1=""
-if [ "$sdns_speed" = "1" ] ; then
-    ARGS_1="$ARGS_1 -no-speed-check"
-fi
 if [ "$sdns_address" = "1" ] ; then
     ARGS_1="$ARGS_1 -no-rule-addr"
 fi
@@ -114,6 +111,9 @@ if [ "$sdns_ns" = "1" ] ; then
 fi
 if [ "$sdns_ipset" = "1" ] ; then
     ARGS_1="$ARGS_1 -no-rule-ipset"
+fi
+if [ "$sdns_speed" = "1" ] ; then
+    ARGS_1="$ARGS_1 -no-speed-check"
 fi
 if [ "$sdns_as" = "1" ] ; then
     ARGS_1="$ARGS_1 -no-rule-soa"
@@ -209,7 +209,9 @@ echo "server-tls $sdnss_ip:$sdnss_port $ipc $named $non" >> $SMARTDNS_CONF_TMP
 fi
 elif [ $sdnss_type = "https" ] ; then
 if [ $sdnss_port = "default" ] ; then
-echo "server-https $sdnss_ip $ipc $named $non" >> $SMARTDNS_CONF_TMP
+echo "server-https $sdnss_ip:443 $ipc $named $non" >> $SMARTDNS_CONF_TMP
+else
+echo "server-https $sdnss_ip:$sdnss_port $ipc $named $non" >> $SMARTDNS_CONF_TMP
 fi    
 fi
 if [ $sdnss_ipset != "" ] ; then
@@ -330,7 +332,7 @@ if [ "$ipv6_server" = "1" ] ; then
         ip6tables -t nat -A PREROUTING -p udp -i $IP6 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
     done
 fi
-logger -t "SmartDNS" "重定向53端口"
+#logger -t "SmartDNS" "重定向 53 端口至 $sdns_port"
 nvram set sdns_change2=1
 }
 
@@ -359,8 +361,7 @@ if [ "$ipv6_server" = "1" ] ; then
         ip6tables -t nat -D PREROUTING -p tcp -i $IP6 --dport 53 -j REDIRECT --to-ports $OLD_PORT >/dev/null 2>&1
     done
 fi
-
-logger -t "SmartDNS" "恢复53端口"
+#logger -t "SmartDNS" "释放被重定向的 53 端口"
 nvram set sdns_change2=0
 }
 
@@ -399,6 +400,7 @@ case $snds_redirect in
     ;;
 2)
     set_iptable $sdns_ipv6_server $sdns_tcp_server
+    logger -t "SmartDNS" "重定向 53 端口至 $sdns_port"
     ;;
 esac
 }
@@ -454,6 +456,7 @@ if [ $(nvram get sdns_change1) = 1 ] ; then
 fi
 if [ $(nvram get sdns_change2) = 1 ] ; then
     clear_iptable $sdns_port $sdns_ipv6_server
+    logger -t "SmartDNS" "释放被重定向的 53 端口"
 fi
 }
 
@@ -496,7 +499,9 @@ restart)
     ;;
 reset)
     if [ "$sdns_enable" = "1" ] && [ "$snds_redirect" = "2" ] ; then
+        clear_iptable $sdns_port $sdns_ipv6_server
         set_iptable $sdns_ipv6_server $sdns_tcp_server
+        logger -t "SmartDNS" "重置因网络中断而失效的 53端口重定向"
     fi
     ;;
 *)
