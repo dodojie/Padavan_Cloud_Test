@@ -281,7 +281,7 @@ fi
 
 
 change_dns () {
-if [ "$sdns_port" ne "53" ] ; then
+if [ "$sdns_port" -ne "53" ] ; then
     sed -i '/no-resolv/d' /etc/storage/dnsmasq/dnsmasq.conf
     sed -i '/server=127.0.0.1/d' /etc/storage/dnsmasq/dnsmasq.conf
     cat >> /etc/storage/dnsmasq/dnsmasq.conf << EOF
@@ -310,7 +310,7 @@ nvram set sdns_change1=0
 
 
 set_iptable () {
-if [ "$sdns_port" ne "53" ] ; then
+if [ "$sdns_port" -ne "53" ] ; then
     local ipv6_server=$1
     local tcp_server=$2
     #IPS4="`ifconfig | grep "inet addr" | grep -v ":127" | grep "Bcast" | awk '{print $2}' | awk -F : '{print $2}'`"
