@@ -288,7 +288,7 @@ no-resolv
 server=127.0.0.1#$sdns_port
 EOF
 /sbin/restart_dhcpd
-logger -t "SmartDNS" "添加DNS转发到$sdns_port端口"
+# logger -t "SmartDNS" "添加DNS转发到$sdns_port端口"
 nvram set sdns_change1=1
 }
 
@@ -299,7 +299,7 @@ sed -i '/server=127.0.0.1/d' /etc/storage/dnsmasq/dnsmasq.conf
 if [ $(nvram get sdns_change) = 1 ] ; then
     /sbin/restart_dhcpd
 fi
-logger -t "SmartDNS" "删除$sdns_port端口DNS转发"
+# logger -t "SmartDNS" "删除$sdns_port端口DNS转发"
 nvram set sdns_change1=0
 }
 
@@ -397,7 +397,9 @@ fi
 $smartdns_file -f -c $SMARTDNS_CONF $args &>/dev/null &
 case $snds_redirect in
 1)
+    del_dns
     change_dns
+    logger -t "SmartDNS" "添加DNS转发到$sdns_port端口"
     ;;
 2)
     set_iptable $sdns_ipv6_server $sdns_tcp_server
@@ -454,6 +456,7 @@ if [ -n "$adbyby_process" ] && [ $(nvram get adbyby_enable) = 1 ] && [ $(nvram g
 fi
 if [ $(nvram get sdns_change1) = 1 ] ; then
     del_dns
+    logger -t "SmartDNS" "删除$sdns_port端口DNS转发"
 fi
 if [ $(nvram get sdns_change2) = 1 ] ; then
     sdns_ported=$sdns_port
@@ -498,6 +501,13 @@ stop)
     fi
     ;;
 restart)
+    if [ "$sdns_enable" = "1" ] && [ "$snds_redirect" = "2" ] ; then
+        sdns_ported=$sdns_port
+        if [ -s "/tmp/smartdns.port" ] ; then
+            sdns_ported=`cat /tmp/smartdns.port`
+        fi
+        clear_iptable $sdns_ported $sdns_ipv6_server
+    fi
     check_ss
     start_smartdns
     logger -t "SmartDNS" "SmartDNS重启完成"
