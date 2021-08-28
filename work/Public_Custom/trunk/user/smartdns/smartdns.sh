@@ -53,7 +53,7 @@ file2="/tmp/smartdns.md5"
 
 SAVE () {
     md5sum -b $files > $file1
-    logger -t "storage" "保存内部存储到闪存"
+    logger -t "SmartDNS" "保存内部存储到闪存"
     mtd_storage.sh save
 }
 
@@ -138,26 +138,26 @@ echo "rr-ttl-min $sdns_ttl_min" >> $SMARTDNS_CONF_TMP
 echo "rr-ttl-max $sdns_ttl_max" >> $SMARTDNS_CONF_TMP
 echo "tcp-idle-time 120" >> $SMARTDNS_CONF_TMP
 if [ $snds_ip_change -eq 1 ] ;then
-echo "dualstack-ip-selection yes" >> $SMARTDNS_CONF_TMP
-echo "dualstack-ip-selection-threshold $(nvram get snds_ip_change_time)" >> $SMARTDNS_CONF_TMP
+    echo "dualstack-ip-selection yes" >> $SMARTDNS_CONF_TMP
+    echo "dualstack-ip-selection-threshold $(nvram get snds_ip_change_time)" >> $SMARTDNS_CONF_TMP
 elif [ $sdns_ipv6 -eq 1 ] ;then
-echo "force-AAAA-SOA yes" >> $SMARTDNS_CONF_TMP
+    echo "force-AAAA-SOA yes" >> $SMARTDNS_CONF_TMP
 fi
 if [ $sdns_cache_persist -eq 1 ] && [ $snds_cache -gt 0 ] ;then
-echo "cache-persist yes" >> $SMARTDNS_CONF_TMP
-echo "cache-file /etc/storage/smartdns.cache" >> $SMARTDNS_CONF_TMP
+    echo "cache-persist yes" >> $SMARTDNS_CONF_TMP
+    echo "cache-file /etc/storage/smartdns.cache" >> $SMARTDNS_CONF_TMP
 else
-echo "cache-persist no" >> $SMARTDNS_CONF_TMP
+    echo "cache-persist no" >> $SMARTDNS_CONF_TMP
 fi
 if [ $sdns_www -eq 1 ] && [ $snds_cache -gt 0 ] ;then
-echo "prefetch-domain yes" >> $SMARTDNS_CONF_TMP
+    echo "prefetch-domain yes" >> $SMARTDNS_CONF_TMP
 else
-echo "prefetch-domain no" >> $SMARTDNS_CONF_TMP
+    echo "prefetch-domain no" >> $SMARTDNS_CONF_TMP
 fi
 if [ $sdns_exp -eq 1 ] && [ $snds_cache -gt 0 ] ;then
-echo "serve-expired yes" >> $SMARTDNS_CONF_TMP
+    echo "serve-expired yes" >> $SMARTDNS_CONF_TMP
 else
-echo "serve-expired no" >> $SMARTDNS_CONF_TMP
+    echo "serve-expired no" >> $SMARTDNS_CONF_TMP
 fi
 echo "log-level warn" >> $SMARTDNS_CONF_TMP
 listnum=`nvram get sdnss_staticnum_x`
@@ -166,90 +166,90 @@ do
 j=`expr $i - 1`
 sdnss_enable=`nvram get sdnss_enable_x$j`
 if  [ $sdnss_enable -eq 1 ] ; then
-sdnss_name=`nvram get sdnss_name_x$j`
-sdnss_ip=`nvram get sdnss_ip_x$j`
-sdnss_port=`nvram get sdnss_port_x$j`
-sdnss_type=`nvram get sdnss_type_x$j`
-sdnss_ipc=`nvram get sdnss_ipc_x$j`
-sdnss_named=`nvram get sdnss_named_x$j`
-sdnss_non=`nvram get sdnss_non_x$j`
-sdnss_ipset=`nvram get sdnss_ipset_x$j`
-ipc=""
-named=""
-non=""
-sipset=""
-if [ $sdnss_ipc = "whitelist" ] ; then
-ipc="-whitelist-ip"
-elif [ $sdnss_ipc = "blacklist" ] ; then
-ipc="-blacklist-ip"
-fi
-if [ $sdnss_named != "" ] ; then
-named="-group $sdnss_named"
-fi
-if [ $sdnss_non = "1" ] ; then
-non="-exclude-default-group"
-fi
-if [ $sdnss_type = "tcp" ] ; then
-if [ $sdnss_port = "default" ] ; then
-echo "server-tcp $sdnss_ip:53 $ipc $named $non" >> $SMARTDNS_CONF_TMP
-else
-echo "server-tcp $sdnss_ip:$sdnss_port $ipc $named $non" >> $SMARTDNS_CONF_TMP
-fi
-elif [ $sdnss_type = "udp" ] ; then
-if [ $sdnss_port = "default" ] ; then
-echo "server $sdnss_ip:53 $ipc $named $non" >> $SMARTDNS_CONF_TMP
-else
-echo "server $sdnss_ip:$sdnss_port $ipc $named $non" >> $SMARTDNS_CONF_TMP
-fi
-elif [ $sdnss_type = "tls" ] ; then
-if [ $sdnss_port = "default" ] ; then
-echo "server-tls $sdnss_ip:853 $ipc $named $non" >> $SMARTDNS_CONF_TMP
-else
-echo "server-tls $sdnss_ip:$sdnss_port $ipc $named $non" >> $SMARTDNS_CONF_TMP
-fi
-elif [ $sdnss_type = "https" ] ; then
-if [ $sdnss_port = "default" ] ; then
-echo "server-https $sdnss_ip:443 $ipc $named $non" >> $SMARTDNS_CONF_TMP
-else
-echo "server-https $sdnss_ip:$sdnss_port $ipc $named $non" >> $SMARTDNS_CONF_TMP
-fi    
-fi
-if [ $sdnss_ipset != "" ] ; then
-#ipset add gfwlist $sdnss_ipset 2>/dev/null
-CheckIPAddr $sdnss_ipset
-if [ "$?" == "1" ] ;then
-echo "ipset /$sdnss_ipset/smartdns" >> $SMARTDNS_CONF_TMP
-else
-ipset add smartdns $sdnss_ipset 2>/dev/null
-fi
-fi    
+    sdnss_name=`nvram get sdnss_name_x$j`
+    sdnss_ip=`nvram get sdnss_ip_x$j`
+    sdnss_port=`nvram get sdnss_port_x$j`
+    sdnss_type=`nvram get sdnss_type_x$j`
+    sdnss_ipc=`nvram get sdnss_ipc_x$j`
+    sdnss_named=`nvram get sdnss_named_x$j`
+    sdnss_non=`nvram get sdnss_non_x$j`
+    sdnss_ipset=`nvram get sdnss_ipset_x$j`
+    ipc=""
+    named=""
+    non=""
+    sipset=""
+    if [ $sdnss_ipc = "whitelist" ] ; then
+            ipc="-whitelist-ip"
+    elif [ $sdnss_ipc = "blacklist" ] ; then
+        ipc="-blacklist-ip"
+    fi
+    if [ $sdnss_named != "" ] ; then
+        named="-group $sdnss_named"
+    fi
+    if [ $sdnss_non = "1" ] ; then
+        non="-exclude-default-group"
+    fi
+    if [ $sdnss_type = "tcp" ] ; then
+        if [ $sdnss_port = "default" ] ; then
+            echo "server-tcp $sdnss_ip:53 $ipc $named $non" >> $SMARTDNS_CONF_TMP
+        else
+            echo "server-tcp $sdnss_ip:$sdnss_port $ipc $named $non" >> $SMARTDNS_CONF_TMP
+        fi
+    elif [ $sdnss_type = "udp" ] ; then
+        if [ $sdnss_port = "default" ] ; then
+            echo "server $sdnss_ip:53 $ipc $named $non" >> $SMARTDNS_CONF_TMP
+        else
+            echo "server $sdnss_ip:$sdnss_port $ipc $named $non" >> $SMARTDNS_CONF_TMP
+        fi
+    elif [ $sdnss_type = "tls" ] ; then
+        if [ $sdnss_port = "default" ] ; then
+            echo "server-tls $sdnss_ip:853 $ipc $named $non" >> $SMARTDNS_CONF_TMP
+        else
+            echo "server-tls $sdnss_ip:$sdnss_port $ipc $named $non" >> $SMARTDNS_CONF_TMP
+        fi
+    elif [ $sdnss_type = "https" ] ; then
+        if [ $sdnss_port = "default" ] ; then
+            echo "server-https $sdnss_ip:443 $ipc $named $non" >> $SMARTDNS_CONF_TMP
+        else
+            echo "server-https $sdnss_ip:$sdnss_port $ipc $named $non" >> $SMARTDNS_CONF_TMP
+        fi    
+    fi
+    if [ $sdnss_ipset != "" ] ; then
+        #ipset add gfwlist $sdnss_ipset 2>/dev/null
+        CheckIPAddr $sdnss_ipset
+        if [ "$?" == "1" ] ;then
+            echo "ipset /$sdnss_ipset/smartdns" >> $SMARTDNS_CONF_TMP
+        else
+            ipset add smartdns $sdnss_ipset 2>/dev/null
+        fi
+    fi
 fi
 done
 if [ $ss_white = "1" ] && [ -f /etc/storage/chinadns/chnroute.txt ] ; then
-rm -f /tmp/whitelist.conf
-logger -t "SmartDNS" "开始处理白名单IP"
-awk '{printf("whitelist-ip %s\n", $1, $1 )}' /etc/storage/chinadns/chnroute.txt >> /tmp/whitelist.conf
-echo "conf-file /tmp/whitelist.conf" >> $SMARTDNS_CONF_TMP
+    rm -f /tmp/whitelist.conf
+    logger -t "SmartDNS" "开始处理白名单IP"
+    awk '{printf("whitelist-ip %s\n", $1, $1 )}' /etc/storage/chinadns/chnroute.txt >> /tmp/whitelist.conf
+    echo "conf-file /tmp/whitelist.conf" >> $SMARTDNS_CONF_TMP
 fi
 if [ $ss_black = "1" ] && [ -f /etc/storage/chinadns/chnroute.txt ] ; then
-rm -f /tmp/blacklist.conf
-logger -t "SmartDNS" "开始处理黑名单IP"
-awk '{printf("blacklist-ip %s\n", $1, $1 )}' /etc/storage/chinadns/chnroute.txt >> /tmp/blacklist.conf
-echo "conf-file /tmp/blacklist.conf" >> $SMARTDNS_CONF_TMP
+    rm -f /tmp/blacklist.conf
+    logger -t "SmartDNS" "开始处理黑名单IP"
+    awk '{printf("blacklist-ip %s\n", $1, $1 )}' /etc/storage/chinadns/chnroute.txt >> /tmp/blacklist.conf
+    echo "conf-file /tmp/blacklist.conf" >> $SMARTDNS_CONF_TMP
 fi
 }
 
 gensdnssecond(){
 if  [ $sdnse_enable -eq 1 ] ; then
-ARGS=""
-ADDR=""
-if [ "$sdnse_speed" = "1" ] ; then
-    ARGS="$ARGS -no-speed-check"
-fi
-if [ ! -z "$sdnse_name" ] ; then
+    ARGS=""
+    ADDR=""
+    if [ "$sdnse_speed" = "1" ] ; then
+        ARGS="$ARGS -no-speed-check"
+    fi
+    if [ ! -z "$sdnse_name" ] ; then
         ARGS="$ARGS -group $sdnse_name"
     fi
-if [ "$sdnse_address" = "1" ] ; then
+    if [ "$sdnse_address" = "1" ] ; then
         ARGS="$ARGS -no-rule-addr"
     fi
     if [ "$sdnse_ns" = "1" ] ; then
@@ -272,8 +272,8 @@ if [ "$sdnse_address" = "1" ] ; then
     else
         ADDR=""
     fi
-echo "bind" "$ADDR:$sdnse_port $ARGS" >> $SMARTDNS_CONF_TMP
-    if [ "$sdnse_tcp" = "1" ] ; then
+    echo "bind" "$ADDR:$sdnse_port $ARGS" >> $SMARTDNS_CONF_TMP
+     if [ "$sdnse_tcp" = "1" ] ; then
         echo "bind-tcp" "$ADDR:$sdnse_port$ARGS" >> $SMARTDNS_CONF_TMP
     fi
 fi
@@ -281,20 +281,15 @@ fi
 
 
 change_dns () {
-if [ "$sdns_port" -ne "53" ] ; then
-    sed -i '/no-resolv/d' /etc/storage/dnsmasq/dnsmasq.conf
-    sed -i '/server=127.0.0.1/d' /etc/storage/dnsmasq/dnsmasq.conf
-    cat >> /etc/storage/dnsmasq/dnsmasq.conf << EOF
-    no-resolv
-    server=127.0.0.1#$sdns_port
-    EOF
-    /sbin/restart_dhcpd
-    # logger -t "SmartDNS" "添加DNS转发到$sdns_port端口"
-    nvram set sdns_change1=1
-else
-    logger -t "SmartDNS" "smartdns为 $sdns_port 端口，设置重定向为 无"
-    nvram set snds_redirect=0
-fi
+sed -i '/no-resolv/d' /etc/storage/dnsmasq/dnsmasq.conf
+sed -i '/server=127.0.0.1/d' /etc/storage/dnsmasq/dnsmasq.conf
+cat >> /etc/storage/dnsmasq/dnsmasq.conf << EOF
+no-resolv
+server=127.0.0.1#$sdns_port
+EOF
+/sbin/restart_dhcpd
+logger -t "SmartDNS" "添加DNS转发到$sdns_port端口"
+nvram set sdns_change1=1
 }
 
 
@@ -304,47 +299,41 @@ sed -i '/server=127.0.0.1/d' /etc/storage/dnsmasq/dnsmasq.conf
 if [ $(nvram get sdns_change) = 1 ] ; then
     /sbin/restart_dhcpd
 fi
-# logger -t "SmartDNS" "删除$sdns_port端口DNS转发"
+logger -t "SmartDNS" "删除$sdns_port端口DNS转发"
 nvram set sdns_change1=0
 }
 
 
 set_iptable () {
-if [ "$sdns_port" -ne "53" ] ; then
-    local ipv6_server=$1
-    local tcp_server=$2
-    #IPS4="`ifconfig | grep "inet addr" | grep -v ":127" | grep "Bcast" | awk '{print $2}' | awk -F : '{print $2}'`"
-    IPS4="br0"
-    for IP4 in $IPS4
+local ipv6_server=$1
+local tcp_server=$2
+#IPS4="`ifconfig | grep "inet addr" | grep -v ":127" | grep "Bcast" | awk '{print $2}' | awk -F : '{print $2}'`"
+IPS4="br0"
+for IP4 in $IPS4
+do
+    if [ "$tcp_server" = "1" ] ; then
+        #iptables -t nat -A PREROUTING -p tcp -d $IP4 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
+        iptables -t nat -A PREROUTING -p tcp -i $IP4 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
+    fi
+    #iptables -t nat -A PREROUTING -p udp -d $IP4 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
+    iptables -t nat -A PREROUTING -p udp -i $IP4 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
+done
+
+if [ "$ipv6_server" = "1" ] ; then
+    #IPS6="`ifconfig | grep "inet6 addr" | grep -v "fe80::" | grep -v "::1" | grep "Global" | awk '{print $3}'`"
+    IPS6="br0"
+    for IP6 in $IPS6
     do
         if [ "$tcp_server" = "1" ] ; then
-            #iptables -t nat -A PREROUTING -p tcp -d $IP4 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
-            iptables -t nat -A PREROUTING -p tcp -i $IP4 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
+            #ip6tables -t nat -A PREROUTING -p tcp -d $IP6 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
+            ip6tables -t nat -A PREROUTING -p tcp -i $IP6 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
         fi
-        #iptables -t nat -A PREROUTING -p udp -d $IP4 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
-        iptables -t nat -A PREROUTING -p udp -i $IP4 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
+        #ip6tables -t nat -A PREROUTING -p udp -d $IP6 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
+        ip6tables -t nat -A PREROUTING -p udp -i $IP6 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
     done
-    
-    if [ "$ipv6_server" = "1" ] ; then
-        #IPS6="`ifconfig | grep "inet6 addr" | grep -v "fe80::" | grep -v "::1" | grep "Global" | awk '{print $3}'`"
-        IPS6="br0"
-        for IP6 in $IPS6
-        do
-            if [ "$tcp_server" = "1" ] ; then
-                #ip6tables -t nat -A PREROUTING -p tcp -d $IP6 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
-                ip6tables -t nat -A PREROUTING -p tcp -i $IP6 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
-            fi
-            #ip6tables -t nat -A PREROUTING -p udp -d $IP6 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
-            ip6tables -t nat -A PREROUTING -p udp -i $IP6 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
-        done
-    fi
-    #logger -t "SmartDNS" "重定向 53 端口至 $sdns_port"
-    echo $sdns_port > /tmp/smartdns.port
-    nvram set sdns_change2=1
-else
-    logger -t "SmartDNS" "smartdns为 $sdns_port 端口，设置重定向为 无"
-    nvram set snds_redirect=0
 fi
+logger -t "SmartDNS" "重定向 53 端口至 $sdns_port"
+nvram set sdns_change2=1
 }
 
 
@@ -372,7 +361,7 @@ if [ "$ipv6_server" = "1" ] ; then
         ip6tables -t nat -D PREROUTING -p tcp -i $IP6 --dport 53 -j REDIRECT --to-ports $OLD_PORT >/dev/null 2>&1
     done
 fi
-#logger -t "SmartDNS" "释放被重定向的 53 端口"
+logger -t "SmartDNS" "释放被重定向的 53 端口"
 nvram set sdns_change2=0
 }
 
@@ -380,6 +369,20 @@ nvram set sdns_change2=0
 start_smartdns(){
 if [ $sdns_enable -eq 0 ] ; then
    nvram set sdns_enable=1
+fi
+if [ "$sdns_port" = "53" ] ; then
+    nvram set snds_redirect=0
+    snds_redirect=0
+    sed -i '/port=0/d' /etc/storage/dnsmasq/dnsmasq.conf
+    echo "port=0" >> /etc/storage/dnsmasq/dnsmasq.conf
+    if [ ! -s "/tmp/smartdns.port" ] || [ "`cat /tmp/smartdns.port`" -ne "53" ] ; then
+        if [ -n "$adbyby_process" ] && [ $(nvram get adbyby_enable) = 1 ] && [ $(nvram get adbyby_add) = 0 ] ; then
+            logger -t "SmartDNS" "Adbyby去广告规则: Dnsmasq ⇒ SmartDNS"
+            nvram set adbyby_add=1
+            /bin/sh /usr/bin/adbyby.sh switch >/dev/null 2>&1
+        fi
+        /sbin/restart_dhcpd
+    fi
 fi
 check_smartdns
 rm -f /tmp/sdnsipset.conf
@@ -407,13 +410,10 @@ fi
 $smartdns_file -f -c $SMARTDNS_CONF $args &>/dev/null &
 case $snds_redirect in
 1)
-    del_dns
     change_dns
-    logger -t "SmartDNS" "添加DNS转发到$sdns_port端口"
     ;;
 2)
     set_iptable $sdns_ipv6_server $sdns_tcp_server
-    logger -t "SmartDNS" "重定向 53 端口至 $sdns_port"
     ;;
 esac
 }
@@ -466,18 +466,19 @@ if [ -n "$adbyby_process" ] && [ $(nvram get adbyby_enable) = 1 ] && [ $(nvram g
 fi
 if [ $(nvram get sdns_change1) = 1 ] ; then
     del_dns
-    logger -t "SmartDNS" "删除$sdns_port端口DNS转发"
 fi
 if [ $(nvram get sdns_change2) = 1 ] ; then
-    sdns_ported=$sdns_port
-    if [ -s "/tmp/smartdns.port" ] ; then
-        sdns_ported=`cat /tmp/smartdns.port`
-    fi
     clear_iptable $sdns_ported $sdns_ipv6_server
-    logger -t "SmartDNS" "释放被重定向的 53 端口"
 fi
 }
 
+sdns_ported=$sdns_port
+if [ -s "/tmp/smartdns.port" ] ; then
+    sdns_ported=`cat /tmp/smartdns.port`
+    if [ "$sdns_port" -ne "53" ] && [ "$sdns_ported" = "53" ] ; then
+        sed -i '/port=0/d' /etc/storage/dnsmasq/dnsmasq.conf
+    fi
+fi
 
 case $1 in
 start)
@@ -490,6 +491,7 @@ start)
     sleep 1
     logger -t "SmartDNS" "SmartDNS启动成功"
     MD5
+    echo $sdns_port > /tmp/smartdns.port
     ;;
 stop)
     if [ $sdns_enable = 1 ] && [ -n "$smartdns_process" ] ; then
@@ -512,10 +514,6 @@ stop)
     ;;
 restart)
     if [ "$sdns_enable" = "1" ] && [ "$snds_redirect" = "2" ] ; then
-        sdns_ported=$sdns_port
-        if [ -s "/tmp/smartdns.port" ] ; then
-            sdns_ported=`cat /tmp/smartdns.port`
-        fi
         clear_iptable $sdns_ported $sdns_ipv6_server
     fi
     check_ss
@@ -524,13 +522,8 @@ restart)
     ;;
 reset)
     if [ "$sdns_enable" = "1" ] && [ "$snds_redirect" = "2" ] ; then
-        sdns_ported=$sdns_port
-        if [ -s "/tmp/smartdns.port" ] ; then
-            sdns_ported=`cat /tmp/smartdns.port`
-        fi
         clear_iptable $sdns_ported $sdns_ipv6_server
         set_iptable $sdns_ipv6_server $sdns_tcp_server
-        logger -t "SmartDNS" "重置因网络中断而失效的 53端口重定向"
     fi
     ;;
 *)

@@ -49,7 +49,7 @@ file2="/tmp/adbyby.md5"
 
 SAVE () {
     md5sum -b $files > $file1
-    logger -t "storage" "保存内部存储到闪存"
+    logger -t "adbyby" "保存内部存储到闪存"
     mtd_storage.sh save
 }
 
@@ -189,6 +189,7 @@ if [ -e /tmp/adbyby_smartdns ] ; then
         rm -f /tmp/adbyby_smartdns
     fi
     /bin/sh /usr/bin/smartdns.sh restart >/dev/null 2>&1
+    sleep 10
 else
     /sbin/restart_dhcpd
 fi
