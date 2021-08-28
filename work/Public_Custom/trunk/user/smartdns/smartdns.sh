@@ -281,15 +281,20 @@ fi
 
 
 change_dns () {
-sed -i '/no-resolv/d' /etc/storage/dnsmasq/dnsmasq.conf
-sed -i '/server=127.0.0.1/d' /etc/storage/dnsmasq/dnsmasq.conf
-cat >> /etc/storage/dnsmasq/dnsmasq.conf << EOF
-no-resolv
-server=127.0.0.1#$sdns_port
-EOF
-/sbin/restart_dhcpd
-# logger -t "SmartDNS" "添加DNS转发到$sdns_port端口"
-nvram set sdns_change1=1
+if [ "$sdns_port" ne "53" ] ; then
+    sed -i '/no-resolv/d' /etc/storage/dnsmasq/dnsmasq.conf
+    sed -i '/server=127.0.0.1/d' /etc/storage/dnsmasq/dnsmasq.conf
+    cat >> /etc/storage/dnsmasq/dnsmasq.conf << EOF
+    no-resolv
+    server=127.0.0.1#$sdns_port
+    EOF
+    /sbin/restart_dhcpd
+    # logger -t "SmartDNS" "添加DNS转发到$sdns_port端口"
+    nvram set sdns_change1=1
+else
+    logger -t "SmartDNS" "smartdns为 $sdns_port 端口，设置重定向为 无"
+    nvram set snds_redirect=0
+fi
 }
 
 
@@ -305,36 +310,41 @@ nvram set sdns_change1=0
 
 
 set_iptable () {
-local ipv6_server=$1
-local tcp_server=$2
-#IPS4="`ifconfig | grep "inet addr" | grep -v ":127" | grep "Bcast" | awk '{print $2}' | awk -F : '{print $2}'`"
-IPS4="br0"
-for IP4 in $IPS4
-do
-    if [ "$tcp_server" = "1" ] ; then
-        #iptables -t nat -A PREROUTING -p tcp -d $IP4 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
-        iptables -t nat -A PREROUTING -p tcp -i $IP4 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
-    fi
-    #iptables -t nat -A PREROUTING -p udp -d $IP4 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
-    iptables -t nat -A PREROUTING -p udp -i $IP4 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
-done
-
-if [ "$ipv6_server" = "1" ] ; then
-    #IPS6="`ifconfig | grep "inet6 addr" | grep -v "fe80::" | grep -v "::1" | grep "Global" | awk '{print $3}'`"
-    IPS6="br0"
-    for IP6 in $IPS6
+if [ "$sdns_port" ne "53" ] ; then
+    local ipv6_server=$1
+    local tcp_server=$2
+    #IPS4="`ifconfig | grep "inet addr" | grep -v ":127" | grep "Bcast" | awk '{print $2}' | awk -F : '{print $2}'`"
+    IPS4="br0"
+    for IP4 in $IPS4
     do
         if [ "$tcp_server" = "1" ] ; then
-            #ip6tables -t nat -A PREROUTING -p tcp -d $IP6 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
-            ip6tables -t nat -A PREROUTING -p tcp -i $IP6 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
+            #iptables -t nat -A PREROUTING -p tcp -d $IP4 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
+            iptables -t nat -A PREROUTING -p tcp -i $IP4 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
         fi
-        #ip6tables -t nat -A PREROUTING -p udp -d $IP6 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
-        ip6tables -t nat -A PREROUTING -p udp -i $IP6 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
+        #iptables -t nat -A PREROUTING -p udp -d $IP4 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
+        iptables -t nat -A PREROUTING -p udp -i $IP4 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
     done
+    
+    if [ "$ipv6_server" = "1" ] ; then
+        #IPS6="`ifconfig | grep "inet6 addr" | grep -v "fe80::" | grep -v "::1" | grep "Global" | awk '{print $3}'`"
+        IPS6="br0"
+        for IP6 in $IPS6
+        do
+            if [ "$tcp_server" = "1" ] ; then
+                #ip6tables -t nat -A PREROUTING -p tcp -d $IP6 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
+                ip6tables -t nat -A PREROUTING -p tcp -i $IP6 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
+            fi
+            #ip6tables -t nat -A PREROUTING -p udp -d $IP6 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
+            ip6tables -t nat -A PREROUTING -p udp -i $IP6 --dport 53 -j REDIRECT --to-ports $sdns_port >/dev/null 2>&1
+        done
+    fi
+    #logger -t "SmartDNS" "重定向 53 端口至 $sdns_port"
+    echo $sdns_port > /tmp/smartdns.port
+    nvram set sdns_change2=1
+else
+    logger -t "SmartDNS" "smartdns为 $sdns_port 端口，设置重定向为 无"
+    nvram set snds_redirect=0
 fi
-#logger -t "SmartDNS" "重定向 53 端口至 $sdns_port"
-echo $sdns_port > /tmp/smartdns.port
-nvram set sdns_change2=1
 }
 
 
