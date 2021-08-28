@@ -333,6 +333,7 @@ if [ "$ipv6_server" = "1" ] ; then
     done
 fi
 #logger -t "SmartDNS" "重定向 53 端口至 $sdns_port"
+echo $sdns_port > /tmp/smartdns.port
 nvram set sdns_change2=1
 }
 
@@ -352,7 +353,7 @@ done
 
 if [ "$ipv6_server" = "1" ] ; then
     #IPS6="-d `ifconfig | grep "inet6 addr" | grep -v "fe80::" | grep -v "::1" | grep "Global" | awk '{print $3}'`"
-    IPS6="-i br0"
+    IPS6="br0"
     for IP6 in $IPS6
     do
         #ip6tables -t nat -D PREROUTING -p udp -d $IP6 --dport 53 -j REDIRECT --to-ports $OLD_PORT >/dev/null 2>&1
@@ -455,7 +456,11 @@ if [ $(nvram get sdns_change1) = 1 ] ; then
     del_dns
 fi
 if [ $(nvram get sdns_change2) = 1 ] ; then
-    clear_iptable $sdns_port $sdns_ipv6_server
+    sdns_ported=$sdns_port
+    if [ -s "/tmp/smartdns.port" ] ; then
+        sdns_ported=`cat /tmp/smartdns.port`
+    fi
+    clear_iptable $sdns_ported $sdns_ipv6_server
     logger -t "SmartDNS" "释放被重定向的 53 端口"
 fi
 }
@@ -499,7 +504,11 @@ restart)
     ;;
 reset)
     if [ "$sdns_enable" = "1" ] && [ "$snds_redirect" = "2" ] ; then
-        clear_iptable $sdns_port $sdns_ipv6_server
+        sdns_ported=$sdns_port
+        if [ -s "/tmp/smartdns.port" ] ; then
+            sdns_ported=`cat /tmp/smartdns.port`
+        fi
+        clear_iptable $sdns_ported $sdns_ipv6_server
         set_iptable $sdns_ipv6_server $sdns_tcp_server
         logger -t "SmartDNS" "重置因网络中断而失效的 53端口重定向"
     fi
